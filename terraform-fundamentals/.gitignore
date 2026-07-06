@@ -1,0 +1,9 @@
+# Local .terraform directories (contains huge binary plugins)
+.terraform/
+
+# State files (contains sensitive configuration data and secrets)
+*.tfstate
+*.tfstate.backup
+
+# Crash logs
+crash.log
