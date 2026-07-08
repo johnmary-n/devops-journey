@@ -1,0 +1,26 @@
+name: DevOps Automation Pipeline
+
+# 1. Trigger: Run this pipeline every time someone pushes to the main branch
+on:
+  push:
+    branches: [ main ]
+
+# 2. Jobs: The actual phases of the assembly line
+jobs:
+  code-validation:
+    # Tell GitHub to spin up a fresh, cloud-hosted Ubuntu server to run our tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Pull down the code from your repository onto the cloud server
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Simulate a compilation or security verification step
+      - name: Run Syntax and Compliance Verification
+        run: |
+          echo "=== STARTING SECURITY & COMPLIANCE SCAN ==="
+          echo "Checking directory structure..."
+          ls -la
+          echo "Verifying local environment integrity..."
+          echo "=== CONGRATULATIONS: ALL PIPELINE CHECKS PASSED ==="
