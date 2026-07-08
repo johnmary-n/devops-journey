@@ -21,7 +21,7 @@ jobs:
           
           # Search recursively for dangerous strings like password, secret_key, or private_key
           # Ignoring the hidden .git directory and the workflow file itself
-          if grep -rqi --exclude-dir=.git --exclude=.github/workflows/* "password\|secret_key\|private_key\|aws_token" .; then
+          if grep -rqi --exclude-dir=.git --exclude-dir=.github "password\|secret_key\|private_key\|aws_token" .; then
             echo "❌ CRITICAL SECURITY FAILURE: Hardcoded credentials or private keys detected in the repository!"
             echo "Pipeline halted to prevent downstream compromise."
             exit 1
