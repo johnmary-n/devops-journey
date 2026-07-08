@@ -1,26 +1,41 @@
-name: DevOps Automation Pipeline
+name: DevSecOps Automation & Security Pipeline
 
-# 1. Trigger: Run this pipeline every time someone pushes to the main branch
 on:
   push:
     branches: [ main ]
 
-# 2. Jobs: The actual phases of the assembly line
 jobs:
-  code-validation:
-    # Tell GitHub to spin up a fresh, cloud-hosted Ubuntu server to run our tests
+  security-and-compliance:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Pull down the code from your repository onto the cloud server
+      # Step 1: Pull the codebase onto the cloud runner
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      # Step 2: Simulate a compilation or security verification step
-      - name: Run Syntax and Compliance Verification
+      # Step 2: Automated Secret Scanning (SAST Security Gate)
+      - name: Execute Credential & Secret Leak Scan
         run: |
-          echo "=== STARTING SECURITY & COMPLIANCE SCAN ==="
-          echo "Checking directory structure..."
-          ls -la
-          echo "Verifying local environment integrity..."
-          echo "=== CONGRATULATIONS: ALL PIPELINE CHECKS PASSED ==="
+          echo "=== STARTING STATIC APPLICATION SECURITY TESTING (SAST) ==="
+          echo "Scanning repository files for high-risk hardcoded credentials..."
+          
+          # Search recursively for dangerous strings like password, secret_key, or private_key
+          # Ignoring the hidden .git directory and the workflow file itself
+          if grep -rqi --exclude-dir=.git --exclude=.github/workflows/* "password\|secret_key\|private_key\|aws_token" .; then
+            echo "❌ CRITICAL SECURITY FAILURE: Hardcoded credentials or private keys detected in the repository!"
+            echo "Pipeline halted to prevent downstream compromise."
+            exit 1
+          else
+            echo "✅ SECURE: No cleartext credentials exposed in tracking files."
+          fi
+
+      # Step 3: Infrastructure Structure Verification
+      - name: Verify Infrastructure Code Layout
+        run: |
+          echo "=== RUNNING ARCHITECTURE COMPLIANCE CHECKS ==="
+          if [ -d "terraform-advanced" ]; then
+            echo "Advanced modular environments verified: Present."
+          else
+            echo "⚠️ WARNING: Advanced environment folders missing."
+          fi
+          echo "=== ALL AUTOMATED SECURITY GATES SECURED ==="
