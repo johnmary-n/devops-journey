@@ -4,8 +4,13 @@ on:
   push:
     branches: [ main ]
 
+# 🔑 CRITICAL: Grant the runner permission to request a cryptographic OIDC ID token
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
-  security-and-compliance:
+  security-and-cloud-auth:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,25 +22,24 @@ jobs:
       - name: Execute Credential & Secret Leak Scan
         run: |
           echo "=== STARTING STATIC APPLICATION SECURITY TESTING (SAST) ==="
-          echo "Scanning repository files for high-risk hardcoded credentials..."
-          
-          # Search recursively for dangerous strings like password, secret_key, or private_key
-          # Ignoring the hidden .git directory and the workflow file itself
           if grep -rqi --exclude-dir=.git --exclude-dir=.github "password\|secret_key\|private_key\|aws_token" .; then
-            echo "❌ CRITICAL SECURITY FAILURE: Hardcoded credentials or private keys detected in the repository!"
-            echo "Pipeline halted to prevent downstream compromise."
+            echo "❌ CRITICAL SECURITY FAILURE: Hardcoded credentials detected!"
             exit 1
           else
-            echo "✅ SECURE: No cleartext credentials exposed in tracking files."
+            echo "✅ SECURE: No cleartext credentials exposed."
           fi
 
-      # Step 3: Infrastructure Structure Verification
-      - name: Verify Infrastructure Code Layout
+      # Step 3: Authenticate to Microsoft Azure via Passwordless OIDC Trust
+      - name: Log In to Microsoft Azure (OIDC Federation)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true  # Allows bare tenant identity management
+
+      # Step 4: Verify the Identity Pipeline Connection
+      - name: Execute Live Cloud Directory Verification
         run: |
-          echo "=== RUNNING ARCHITECTURE COMPLIANCE CHECKS ==="
-          if [ -d "terraform-advanced" ]; then
-            echo "Advanced modular environments verified: Present."
-          else
-            echo "⚠️ WARNING: Advanced environment folders missing."
-          fi
-          echo "=== ALL AUTOMATED SECURITY GATES SECURED ==="
+          echo "=== CONNECTED TO MICROSOFT AZURE OIDC ==="
+          echo "Current active security context identity:"
+          az account show --query "{TenantID:tenantId, Environment:environmentName}" --output table
