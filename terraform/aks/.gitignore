@@ -1,0 +1,13 @@
+# Local terraform state & cache (contains infrastructure metadata and secrets)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform.lock.hcl
+
+# Local variable secret overrides
+*.tfvars
+*.tfvars.json
+
+# OS files
+.DS_Store
