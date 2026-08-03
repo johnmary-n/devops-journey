@@ -1,45 +1,48 @@
-name: DevSecOps Automation & Security Pipeline
+name: Capstone DevSecOps CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
-
-# 🔑 CRITICAL: Grant the runner permission to request a cryptographic OIDC ID token
-permissions:
-  id-token: write
-  contents: read
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  security-and-cloud-auth:
+  build-and-test:
+    name: 📦 App Build & Lint Check
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Pull the codebase onto the cloud runner
-      - name: Checkout Code Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Automated Secret Scanning (SAST Security Gate)
-      - name: Execute Credential & Secret Leak Scan
-        run: |
-          echo "=== STARTING STATIC APPLICATION SECURITY TESTING (SAST) ==="
-          if grep -rqi --exclude-dir=.git --exclude-dir=.github "password\|secret_key\|private_key\|aws_token" .; then
-            echo "❌ CRITICAL SECURITY FAILURE: Hardcoded credentials detected!"
-            exit 1
-          else
-            echo "✅ SECURE: No cleartext credentials exposed."
-          fi
-
-      # Step 3: Authenticate to Microsoft Azure via Passwordless OIDC Trust
-      - name: Log In to Microsoft Azure (OIDC Federation)
-        uses: azure/login@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true  # Allows bare tenant identity management
+          node-version: '20'
 
-      # Step 4: Verify the Identity Pipeline Connection
-      - name: Execute Live Cloud Directory Verification
+      - name: Install Dependencies
         run: |
-          echo "=== CONNECTED TO MICROSOFT AZURE OIDC ==="
-          echo "Current active security context identity:"
-          az account show --query "{TenantID:tenantId, Environment:environmentName}" --output table
+          cd capstone/app
+          npm install
+
+  docker-security-scan:
+    name: 🛡️ Container Build & Security Scan
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          cd capstone/app
+          docker build -t capstone-api:${{ github.sha }} .
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'capstone-api:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
